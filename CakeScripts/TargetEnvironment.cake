@@ -33,7 +33,26 @@ class TargetEnvironment
             }
             else if (OperatingSystem.IsLinux())
             {
-                DotNetInstallPath = "/usr/share/dotnet";
+                var userHomeDirectory = Environment.GetEnvironmentVariable("HOME");
+                if (userHomeDirectory != null)
+                {
+                    if (userHomeDirectory != "/root")
+                        DotNetInstallPath = P.Combine(userHomeDirectory, ".dotnet");  // default to user home directory
+                    if (!D.Exists(DotNetInstallPath))
+                        DotNetInstallPath = null;  // SDK not found in user home directory
+
+                    if (DotNetInstallPath == null)
+                    {
+                        DotNetInstallPath = "/usr/share/dotnet";  // assume Ubuntu 22.04 when installed from packages.microsoft.com
+                        if (!D.Exists(DotNetInstallPath))
+                            DotNetInstallPath = "/usr/share/dotnet";  // else try Ubuntu Jammy feed
+                        if (!D.Exists(DotNetInstallPath))
+                            DotNetInstallPath = null;  // SDK not found in both paths
+                    }
+                }
+                
+                if (DotNetInstallPath != null)
+                    Console.WriteLine($"DOTNET_ROOT environment variable wasn't set, using SDK in {DotNetInstallPath}. Setting DOTNET_ROOT is highly recommended.");
             }
             else if (OperatingSystem.IsMacOS())
             {
